@@ -5,10 +5,49 @@ import axios from 'axios';
 import { 
   LogIn, Mail, Lock, XCircle, Loader2, Send 
 } from 'lucide-react';
-import Link from 'next/link'; // Importe o Link
+import Link from 'next/link'; 
 import { useRouter } from 'next/navigation'; 
 
-const API_ENDPOINT = 'http://localhost:8080/api/v1/auth';
+const API_ENDPOINT = 'http://localhost:8080/api/v1/auth/login';
+
+// ----------------------------------------------------------------------
+// COMPONENTE DE INPUT REUTILIZÁVEL (MOVIDO PARA FORA PARA EVITAR PERDA DE FOCO)
+// ----------------------------------------------------------------------
+function InputField({ label, name, type = 'text', icon: Icon, required = false, formData, handleChange, validationErrors }) {
+  const error = validationErrors[name];
+  
+  return (
+    <div className="flex flex-col space-y-2">
+      <label htmlFor={name} className="text-sm font-medium text-gray-300">
+        {label} {required && <span className="text-red-400">*</span>}
+      </label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />}
+        <input
+          id={name}
+          name={name}
+          type={type}
+          value={formData[name]}
+          onChange={handleChange}
+          required={required}
+          className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
+            error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
+          }`}
+        />
+      </div>
+      {error && (
+        <p className="flex items-center text-sm font-medium text-red-400">
+          <XCircle className="mr-1 h-4 w-4" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+// ----------------------------------------------------------------------
+// FIM DO INPUTFIELD
+// ----------------------------------------------------------------------
+
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -20,7 +59,7 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState('');
   const router = useRouter(); 
 
-  // Lida com a mudança nos campos de formulário
+  // CORREÇÃO DE PERDA DE FOCO: Função isolada e eficiente
   const handleChange = (e) => {
     const { name, value } = e.target;
     
@@ -34,7 +73,7 @@ export default function LoginPage() {
     setApiError('');
   };
 
-  // Envio do formulário
+  // Lógica de envio com tratamento de erro refinado
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -42,10 +81,12 @@ export default function LoginPage() {
     setApiError('');
 
     try {
+        // Envia o DTO {email: '...', senha: '...'}
         const response = await axios.post(API_ENDPOINT, formData);
         
         if (response.status === 200 || response.status === 201) {
             console.log("Login bem-sucedido. Dados recebidos:", response.data);
+            // Salvaria o token aqui
             router.push('/'); 
         }
     } catch (error) {
@@ -53,53 +94,25 @@ export default function LoginPage() {
             const { status, message, errors } = error.response.data;
 
             if (status === 400 && errors) {
+                // Validação de DTO (ex: "Email não pode ser vazio")
                 setValidationErrors(errors);
                 setApiError("Preencha todos os campos obrigatórios.");
-            } else if (status === 401) {
+            } else if (status === 401 || status === 403) {
+                // Não autorizado / Credenciais inválidas
                 setApiError("Credenciais inválidas. Verifique seu email e senha.");
             } else {
+                // Outros erros de API (ex: 500)
                 setApiError(`Erro no servidor: ${message || error.response.statusText}`);
             }
         } else {
-            setApiError("Erro de conexão: Não foi possível alcançar o servidor de autenticação.");
+            // Erros de rede/conexão
+            setApiError("Erro de conexão: Não foi possível alcançar o servidor de autenticação. Verifique a porta 8080.");
         }
     } finally {
         setLoading(false);
     }
   };
 
-  // Componente de Input Reutilizável
-  const InputField = ({ label, name, type = 'text', icon: Icon, required = false }) => {
-    const error = validationErrors[name];
-    
-    return (
-      <div className="flex flex-col space-y-2">
-        <label htmlFor={name} className="text-sm font-medium text-gray-300">
-          {label} {required && <span className="text-red-400">*</span>}
-        </label>
-        <div className="relative">
-          {Icon && <Icon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />}
-          <input
-            id={name}
-            name={name}
-            type={type}
-            value={formData[name]}
-            onChange={handleChange}
-            required={required}
-            className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
-            }`}
-          />
-        </div>
-        {error && (
-          <p className="flex items-center text-sm font-medium text-red-400">
-            <XCircle className="mr-1 h-4 w-4" />
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-redbull-dark-blue text-white">
@@ -129,6 +142,9 @@ export default function LoginPage() {
                   type="email" 
                   icon={Mail} 
                   required 
+                  formData={formData} 
+                  handleChange={handleChange}
+                  validationErrors={validationErrors}
               />
 
               <InputField 
@@ -137,6 +153,9 @@ export default function LoginPage() {
                   type="password" 
                   icon={Lock} 
                   required 
+                  formData={formData} 
+                  handleChange={handleChange}
+                  validationErrors={validationErrors}
               />
 
               <div className="pt-4">
@@ -161,13 +180,12 @@ export default function LoginPage() {
             </form>
         </div>
         
-        {/* CORREÇÃO DO REDIRECIONAMENTO */}
         <p className="mt-6 text-center text-sm text-gray-500">
             Ainda não tem conta? 
-            <Link href="/cadastro" passHref legacyBehavior>
-                <div className="font-semibold text-redbull-accent hover:underline ml-1">
+            <Link href="/register" passHref legacyBehavior>
+                <a className="font-semibold text-redbull-accent hover:underline ml-1">
                     Registre-se aqui
-                </div>
+                </a>
             </Link>
         </p>
 

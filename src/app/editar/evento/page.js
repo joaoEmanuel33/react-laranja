@@ -1,27 +1,27 @@
 'use client'; 
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Send, XCircle, FileText, Calendar, MapPin, 
-  Link as LinkIcon, Image as ImageIcon, Tag, Loader2 
+  Link as LinkIcon, Image as ImageIcon, Tag, Loader2, Edit 
 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation'; 
 
-const API_ENDPOINT = 'http://localhost:8080/api/v1/evento';
+// URL base da API
+const BASE_API_URL = 'http://localhost:8080/api/v1/evento';
 
 // Mock do EventoEnum para o frontend
 const EVENTO_TIPOS = [
-    { value: 'CONGRESSO', label: 'CONGRESSO' },
-    { value: 'TREINAMENTO', label: 'TREINAMENTO' },
-    { value: 'WORKSHOP', label: 'WORKSHOP' },
-    { value: 'IMERSÃO', label: 'IMERSÃO' },
-    { value: 'REUNIÃO', label: 'REUNIÃO' },
-    { value: 'HACKATON', label: 'HACKATON' },
-    { value: 'STARTUP', label: 'STARTUP' }
+    { value: 'CORRIDA', label: 'Corrida (GP)' },
+    { value: 'TREINO', label: 'Treino / Teste' },
+    { value: 'EXPOSICAO', label: 'Exposição / Feira' },
+    { value: 'OUTRO', label: 'Outro' },
 ];
 
 // ----------------------------------------------------------------------
 // COMPONENTE DE INPUT REUTILIZÁVEL (MOVIDO PARA FORA)
+// Requer as props: formData, handleChange, validationErrors
 // ----------------------------------------------------------------------
 function InputField({ label, name, type = 'text', icon: Icon, required = false, rows = 1, formData, handleChange, validationErrors }) {
   const error = validationErrors[name];
@@ -114,9 +114,15 @@ function SelectField({ label, name, required = false, formData, handleChange, va
 }
 
 // ----------------------------------------------------------------------
-// PÁGINA PRINCIPAL (CREATEEVENTPAGE)
+// PÁGINA PRINCIPAL (EDIT EVENT PAGE)
 // ----------------------------------------------------------------------
-export default function CreateEventPage() {
+export default function EditEventPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Assumimos que o ID do evento é passado na URL (ex: /evento/edit?id=1)
+  const eventId = searchParams.get('id') || 1; // ID 1 como fallback
+
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -128,14 +134,59 @@ export default function CreateEventPage() {
     linkImagem: '',
   });
   const [validationErrors, setValidationErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [apiError, setApiError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
+  
+  // Função para carregar os dados do evento
+  useEffect(() => {
+    if (!eventId) {
+        setApiError("ID do evento não fornecido.");
+        setInitialLoading(false);
+        return;
+    }
+    
+    const fetchEvent = async () => {
+        try {
+            const response = await axios.get(`${BASE_API_URL}/${eventId}`);
+            const data = response.data;
+            
+            // Tratamento de Data/Hora: Converte o formato do Spring (ISO string)
+            // para o formato aceito pelo input type="datetime-local" (YYYY-MM-DDTHH:mm)
+            const formatDateTime = (isoString) => {
+                if (!isoString) return '';
+                // Simplifica a string ISO para o formato local necessário
+                return isoString.slice(0, 16); // Ex: '2025-12-01T10:00:00' -> '2025-12-01T10:00'
+            };
+            
+            setFormData({
+                nome: data.nome || '',
+                descricao: data.descricao || '',
+                tipo: data.tipo || EVENTO_TIPOS[0].value,
+                local: data.local || '',
+                dataInicio: formatDateTime(data.dataInicio),
+                dataFinal: formatDateTime(data.dataFinal),
+                linkEvento: data.linkEvento || '',
+                linkImagem: data.linkImagem || '',
+            });
+
+        } catch (error) {
+            setApiError(`Erro ao carregar evento: ${error.response?.data?.message || 'Evento não encontrado.'}`);
+        } finally {
+            setInitialLoading(false);
+        }
+    };
+
+    fetchEvent();
+  }, [eventId]); // Executa apenas quando o ID do evento muda
+
+  
+  // Lida com a mudança nos campos de formulário
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // CORRIGIDO: Esta função de callback garante a atualização correta do estado
     setFormData(prev => ({ ...prev, [name]: value }));
     
     setValidationErrors(prev => {
@@ -144,25 +195,30 @@ export default function CreateEventPage() {
         return newErrors;
     });
     setApiError('');
+    setSuccessMessage('');
   };
 
+  // Envio do formulário (PUT/PATCH)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setValidationErrors({});
-    setSuccessMessage('');
     setApiError('');
+    setSuccessMessage('');
 
+    // Prepara os dados: Certifique-se de que as datas estão no formato ISO 8601 completo
+    // Se você estiver usando LocalDateTime no backend, o formato YYYY-MM-DDTHH:mm:ss
+    // pode ser necessário, mas muitos frameworks aceitam o formato simplificado do input.
+    const submitData = { ...formData };
+    
     try {
-        const response = await axios.post(API_ENDPOINT, formData);
+        // Envia o DTO atualizado via PUT
+        const response = await axios.put(`${BASE_API_URL}/${eventId}`, submitData);
         
-        if (response.status === 201 || response.status === 200) {
-            setSuccessMessage(`Evento "${response.data.nome || formData.nome}" criado com sucesso! (ID: ${response.data.id})`);
-            setFormData({
-                nome: '', descricao: '', tipo: EVENTO_TIPOS[0].value, 
-                local: '', dataInicio: '', dataFinal: '', 
-                linkEvento: '', linkImagem: '',
-            });
+        if (response.status === 200) {
+            setSuccessMessage(`Evento "${response.data.nome || formData.nome}" (ID: ${eventId}) atualizado com sucesso!`);
+            // Opcional: Redirecionar
+            // router.push(`/evento/${eventId}`);
         }
     } catch (error) {
         if (error.response) {
@@ -170,9 +226,9 @@ export default function CreateEventPage() {
 
             if (status === 400 && errors) {
                 setValidationErrors(errors);
-                setApiError("Falha na validação dos campos. Verifique os erros abaixo.");
+                setApiError("Falha na validação. Verifique os erros abaixo.");
             } else {
-                setApiError(`Erro ao criar evento: ${message || error.response.statusText}`);
+                setApiError(`Erro ao atualizar evento: ${message || error.response.statusText}`);
             }
         } else {
             setApiError("Erro de rede: Não foi possível conectar ao servidor Spring.");
@@ -183,25 +239,36 @@ export default function CreateEventPage() {
   };
 
 
+  if (initialLoading) {
+      return (
+          <div className="flex min-h-screen items-center justify-center bg-redbull-dark-blue text-white">
+              <Loader2 className="h-8 w-8 animate-spin text-redbull-accent" />
+              <span className="ml-3">Carregando dados do evento...</span>
+          </div>
+      );
+  }
+
   return (
     <div className="min-h-screen bg-redbull-dark-blue text-white pt-20">
       <div className="container mx-auto px-4 py-8">
         
+        {/* Título e Destaque Visual */}
         <div className="mb-10 text-center">
             <h1 className="text-4xl font-extrabold uppercase tracking-wider text-redbull-accent md:text-5xl">
-                Criar Novo Evento
+                <Edit className="inline-block h-8 w-8 mr-2" />
+                Editar Evento (ID: {eventId})
             </h1>
-            <p className="mt-2 text-gray-400">Preencha os dados para registrar um evento.</p>
+            <p className="mt-2 text-gray-400">Atualize os detalhes do evento existente.</p>
         </div>
 
         {/* Mensagens de Feedback */}
         {apiError && (
-            <div className="mx-auto mb-6 max-w-2xl rounded-lg bg-red-800/20 p-4 text-red-400 shadow-lg border border-red-700">
+            <div className="mx-auto mb-6 max-w-4xl rounded-lg bg-red-800/20 p-4 text-red-400 shadow-lg border border-red-700">
                 <p className="font-bold">{apiError}</p>
             </div>
         )}
         {successMessage && (
-            <div className="mx-auto mb-6 max-w-2xl rounded-lg bg-green-800/20 p-4 text-green-400 shadow-lg border border-green-700">
+            <div className="mx-auto mb-6 max-w-4xl rounded-lg bg-green-800/20 p-4 text-green-400 shadow-lg border border-green-700">
                 <p className="font-bold">{successMessage}</p>
             </div>
         )}
@@ -212,82 +279,26 @@ export default function CreateEventPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             
             {/* Nome (Required) */}
-            <InputField 
-                label="Nome do Evento (Máx. 150 caracteres)" 
-                name="nome" 
-                icon={FileText} 
-                required 
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <InputField label="Nome do Evento (Máx. 150 caracteres)" name="nome" icon={FileText} required formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
 
             {/* Local (Required) */}
-            <InputField 
-                label="Local (Máx. 150 caracteres)" 
-                name="local" 
-                icon={MapPin} 
-                required 
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <InputField label="Local (Máx. 150 caracteres)" name="local" icon={MapPin} required formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
             
             {/* Tipo (Enum) (Required) */}
-            <SelectField
-                label="Tipo de Evento"
-                name="tipo"
-                required
-                options={EVENTO_TIPOS}
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <SelectField label="Tipo de Evento" name="tipo" required options={EVENTO_TIPOS} formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
             
             {/* Link Evento (Optional) */}
-            <InputField 
-                label="Link Externo do Evento" 
-                name="linkEvento" 
-                icon={LinkIcon} 
-                type="url" 
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <InputField label="Link Externo do Evento" name="linkEvento" icon={LinkIcon} type="url" formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
 
             {/* Data Início (Required) */}
-            <InputField 
-                label="Data e Hora de Início" 
-                name="dataInicio" 
-                icon={Calendar} 
-                required 
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <InputField label="Data e Hora de Início" name="dataInicio" icon={Calendar} required formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
             
             {/* Data Final (Required) */}
-            <InputField 
-                label="Data e Hora de Finalização" 
-                name="dataFinal" 
-                icon={Calendar} 
-                required 
-                formData={formData} 
-                handleChange={handleChange} 
-                validationErrors={validationErrors} 
-            />
+            <InputField label="Data e Hora de Finalização" name="dataFinal" icon={Calendar} required formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
 
             {/* Link Imagem (Optional) */}
             <div className="col-span-full">
-                <InputField 
-                    label="URL da Imagem de Destaque" 
-                    name="linkImagem" 
-                    icon={ImageIcon} 
-                    type="url" 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    validationErrors={validationErrors} 
-                />
+                <InputField label="URL da Imagem de Destaque" name="linkImagem" icon={ImageIcon} type="url" formData={formData} handleChange={handleChange} validationErrors={validationErrors} />
             </div>
           </div>
           
@@ -309,18 +320,18 @@ export default function CreateEventPage() {
           <div className="pt-4 text-center">
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center justify-center mx-auto rounded-full bg-redbull-accent px-10 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || initialLoading}
+              className="flex items-center justify-center mx-auto rounded-full bg-green-600 px-10 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                  Enviando...
+                  Atualizando...
                 </>
               ) : (
                 <>
-                  <Send className="h-5 w-5 mr-3" />
-                  Criar Evento
+                  <Edit className="h-5 w-5 mr-3" />
+                  Salvar Alterações
                 </>
               )}
             </button>

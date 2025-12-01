@@ -200,7 +200,7 @@ export default function EventListPage() {
   return (
     <main className="container mx-auto px-4 py-12">
       <h2 className="mb-10 text-center text-5xl font-extrabold uppercase tracking-widest text-white">
-        Calendário de Eventos 🏎️
+        Calendário de Eventos 
       </h2>
       
       {/* SEÇÃO DE DESTAQUE */}
