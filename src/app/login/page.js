@@ -5,49 +5,10 @@ import axios from 'axios';
 import { 
   LogIn, Mail, Lock, XCircle, Loader2, Send 
 } from 'lucide-react';
-import Link from 'next/link'; 
+import Link from 'next/link'; // Importe o Link
 import { useRouter } from 'next/navigation'; 
 
-const API_ENDPOINT = 'http://localhost:8080/api/v1/auth/login';
-
-// ----------------------------------------------------------------------
-// COMPONENTE DE INPUT REUTILIZÁVEL (MOVIDO PARA FORA PARA EVITAR PERDA DE FOCO)
-// ----------------------------------------------------------------------
-function InputField({ label, name, type = 'text', icon: Icon, required = false, formData, handleChange, validationErrors }) {
-  const error = validationErrors[name];
-  
-  return (
-    <div className="flex flex-col space-y-2">
-      <label htmlFor={name} className="text-sm font-medium text-gray-300">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />}
-        <input
-          id={name}
-          name={name}
-          type={type}
-          value={formData[name]}
-          onChange={handleChange}
-          required={required}
-          className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
-            error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
-          }`}
-        />
-      </div>
-      {error && (
-        <p className="flex items-center text-sm font-medium text-red-400">
-          <XCircle className="mr-1 h-4 w-4" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-};
-// ----------------------------------------------------------------------
-// FIM DO INPUTFIELD
-// ----------------------------------------------------------------------
-
+const API_ENDPOINT = 'http://localhost:8080/api/v1/auth';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -59,7 +20,7 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState('');
   const router = useRouter(); 
 
-  // CORREÇÃO DE PERDA DE FOCO: Função isolada e eficiente
+  // Lida com a mudança nos campos de formulário
   const handleChange = (e) => {
     const { name, value } = e.target;
     
@@ -73,7 +34,7 @@ export default function LoginPage() {
     setApiError('');
   };
 
-  // Lógica de envio com tratamento de erro refinado
+  // Envio do formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -81,37 +42,64 @@ export default function LoginPage() {
     setApiError('');
 
     try {
-        // Envia o DTO {email: '...', senha: '...'}
         const response = await axios.post(API_ENDPOINT, formData);
-if (response.status === 200 || response.status === 201) {
-  const { token } = response.data; // Supondo que o token seja retornado
-  localStorage.setItem('authToken', token); // Armazena o token no localStorage
-  router.push('/'); // Redireciona para a página principal
-}
+        
+        if (response.status === 200 || response.status === 201) {
+            console.log("Login bem-sucedido. Dados recebidos:", response.data);
+            router.push('/'); 
+        }
     } catch (error) {
         if (error.response) {
             const { status, message, errors } = error.response.data;
 
             if (status === 400 && errors) {
-                // Validação de DTO (ex: "Email não pode ser vazio")
                 setValidationErrors(errors);
                 setApiError("Preencha todos os campos obrigatórios.");
-            } else if (status === 401 || status === 403) {
-                // Não autorizado / Credenciais inválidas
+            } else if (status === 401) {
                 setApiError("Credenciais inválidas. Verifique seu email e senha.");
             } else {
-                // Outros erros de API (ex: 500)
                 setApiError(`Erro no servidor: ${message || error.response.statusText}`);
             }
         } else {
-            // Erros de rede/conexão
-            setApiError("Erro de conexão: Não foi possível alcançar o servidor de autenticação. Verifique a porta 8080.");
+            setApiError("Erro de conexão: Não foi possível alcançar o servidor de autenticação.");
         }
     } finally {
         setLoading(false);
     }
   };
 
+  // Componente de Input Reutilizável
+  const InputField = ({ label, name, type = 'text', icon: Icon, required = false }) => {
+    const error = validationErrors[name];
+    
+    return (
+      <div className="flex flex-col space-y-2">
+        <label htmlFor={name} className="text-sm font-medium text-gray-300">
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+        <div className="relative">
+          {Icon && <Icon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />}
+          <input
+            id={name}
+            name={name}
+            type={type}
+            value={formData[name]}
+            onChange={handleChange}
+            required={required}
+            className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
+            }`}
+          />
+        </div>
+        {error && (
+          <p className="flex items-center text-sm font-medium text-red-400">
+            <XCircle className="mr-1 h-4 w-4" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-redbull-dark-blue text-white">
@@ -141,9 +129,6 @@ if (response.status === 200 || response.status === 201) {
                   type="email" 
                   icon={Mail} 
                   required 
-                  formData={formData} 
-                  handleChange={handleChange}
-                  validationErrors={validationErrors}
               />
 
               <InputField 
@@ -152,39 +137,37 @@ if (response.status === 200 || response.status === 201) {
                   type="password" 
                   icon={Lock} 
                   required 
-                  formData={formData} 
-                  handleChange={handleChange}
-                  validationErrors={validationErrors}
               />
 
               <div className="pt-4">
-              <button
-  type="submit"
-  disabled={loading}
-  className="flex w-full items-center justify-center rounded-lg bg-redbull-accent px-4 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {loading ? (
-    <span className="flex items-center">
-      <Loader2 className="h-5 w-5 animate-spin mr-3" />
-      Autenticando...
-    </span>
-  ) : (
-    <span className="flex items-center">
-      <Send className="h-5 w-5 mr-3" />
-      Entrar
-    </span>
-  )}
-</button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center rounded-lg bg-redbull-accent px-4 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-3" />
+                      Autenticando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5 mr-3" />
+                      Entrar
+                    </>
+                  )}
+                </button>
               </div>
             </form>
         </div>
         
+        {/* CORREÇÃO DO REDIRECIONAMENTO */}
         <p className="mt-6 text-center text-sm text-gray-500">
             Ainda não tem conta? 
             <Link href="/cadastro" passHref legacyBehavior>
-                <a className="font-semibold text-redbull-accent hover:underline ml-1">
+                <div className="font-semibold text-redbull-accent hover:underline ml-1">
                     Registre-se aqui
-                </a>
+                </div>
             </Link>
         </p>
 

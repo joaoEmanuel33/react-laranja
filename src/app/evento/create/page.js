@@ -14,8 +14,8 @@ const EVENTO_TIPOS = [
     { value: 'CONGRESSO', label: 'CONGRESSO' },
     { value: 'TREINAMENTO', label: 'TREINAMENTO' },
     { value: 'WORKSHOP', label: 'WORKSHOP' },
-    { value: 'IMERSÃO', label: 'IMERSÃO' },
-    { value: 'REUNIÃO', label: 'REUNIÃO' },
+    { value: 'IMERSÃO', label: 'IMERSAO' },
+    { value: 'REUNIÃO', label: 'REUNIAO' },
     { value: 'HACKATON', label: 'HACKATON' },
     { value: 'STARTUP', label: 'STARTUP' }
 ];

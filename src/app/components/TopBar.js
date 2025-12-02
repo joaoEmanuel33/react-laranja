@@ -1,93 +1,71 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext/page';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  PlusCircle, LogIn, CalendarClock, LogOut, Edit
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Menu, PlusCircle, LogIn, CalendarClock } from 'lucide-react';
 
 export default function TopBar() {
-  const router = useRouter();
-  const { isLoggedIn, logout } = useAuth(); // Obtém o estado de autenticação e a função de logout do contexto
   const [scrolled, setScrolled] = useState(false);
 
+  // Efeito para detectar a rolagem da página (scroll)
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      // Define como true se a rolagem vertical (scrollY) for maior que 50px
+      setScrolled(window.scrollY > 50);
+    };
+
     window.addEventListener('scroll', handleScroll);
+    
+    // Limpeza do listener para evitar vazamento de memória
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    logout(); // Chama a função de logout do contexto
-    router.push('/login'); // Redireciona para a página de login
-  };
-
+  // Classes Tailwind para mudar o estilo
   const barClasses = `
-    fixed top-0 left-0 w-full z-50 transition-all duration-300
-    ${scrolled ? 'bg-gray-900 shadow-lg' : 'bg-transparent'}
+    fixed top-0 left-0 w-full z-50 transition-all duration-300 backdrop-blur-sm
+    ${scrolled 
+      ? 'bg-redbull-dark-blue/90 border-b border-redbull-accent/50 shadow-xl' // Cor sólida e borda ao rolar
+      : 'bg-transparent' // Transparente no topo
+    }
   `;
 
-  const linkClasses = "flex items-center space-x-2 px-3 py-1.5 rounded-lg font-semibold text-sm transition-colors duration-200";
+  const buttonClasses = "flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold transition-colors duration-200";
   const primaryButtonClasses = "bg-redbull-accent text-white hover:bg-redbull-accent/80 shadow-md hover:shadow-lg";
 
   return (
     <header className={barClasses}>
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         
-        {/* Lado Esquerdo: Nome do Projeto (Rota: /) */}
-        <Link href="/" passHref legacyBehavior>
-          <a className={`${linkClasses} text-white hover:text-redbull-accent cursor-pointer text-lg`}>
+        {/* Lado Esquerdo: Events Manager e Ícone (Rota: /) */}
+        <Link href="/" passHref>
+          <div className={`${buttonClasses} text-white hover:text-redbull-accent cursor-pointer`}>
             <CalendarClock className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline uppercase tracking-wider">Events Manager</span>
-          </a>
+            <span className="hidden text-lg font-bold sm:inline">Events Manager</span>
+          </div>
         </Link>
 
-        {/* Lado Direito: Ações e Autenticação */}
-        <nav className="flex items-center space-x-3">
-          
-          {isLoggedIn ? (
-            // --- USUÁRIO LOGADO ---
-            <>
-              {/* Cadastrar Evento (Rota: /evento/create) */}
-              <Link href="/evento/create" passHref legacyBehavior>
-                <a className={`${linkClasses} ${primaryButtonClasses} hidden sm:flex`}>
-                  <PlusCircle className="h-4 w-4" />
-                  <span>Novo Evento</span>
-                </a>
-              </Link>
+        {/* Centro: Cadastrar Evento (Rota: /evento/create) */}
+        <div className="hidden md:block">
+          <Link href="/evento/create" passHref>
+            <button className={`${buttonClasses} ${primaryButtonClasses}`}>
+              <PlusCircle className="h-5 w-5" />
+              <span>Cadastrar Evento</span>
+            </button>
+          </Link>
+        </div>
 
-              {/* Editar Evento (Rota: /evento/edit) */}
-              <Link href="/evento/edit" passHref legacyBehavior>
-                <a className={`${linkClasses} ${primaryButtonClasses} hidden sm:flex`}>
-                  <Edit className="h-4 w-4" />
-                  <span>Editar Evento</span>
-                </a>
-              </Link>
-              
-              {/* Botão de Logout */}
-              <button 
-                onClick={handleLogout}
-                className={`${linkClasses} text-red-400 border border-red-800/50 hover:bg-red-800/30`}
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sair</span>
-              </button>
-            </>
-          ) : (
-            // --- USUÁRIO DESLOGADO ---
-            <>
-              {/* Entrar (Rota: /login) */}
-              <Link href="/login" passHref legacyBehavior>
-                <a className={`${linkClasses} text-white bg-gray-700 hover:bg-redbull-accent/20 border border-gray-600`}>
-                  <LogIn className="h-4 w-4" />
-                  <span>Login</span>
-                </a>
-              </Link>
-            </>
-          )}
-        </nav>
+        {/* Lado Direito: Entrar (Rota: /login) */}
+        <Link href="/login" passHref>
+          <button className={`${buttonClasses} text-white bg-gray-700 hover:bg-redbull-accent/20 border border-gray-600`}>
+            <LogIn className="h-5 w-5" />
+            <span>Entrar</span>
+          </button>
+        </Link>
+        
+        {/* Menu Mobile (Placeholder) */}
+        <button className="text-white md:hidden">
+          <Menu className="h-6 w-6" />
+        </button>
       </div>
     </header>
   );
