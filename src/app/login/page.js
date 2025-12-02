@@ -83,12 +83,11 @@ export default function LoginPage() {
     try {
         // Envia o DTO {email: '...', senha: '...'}
         const response = await axios.post(API_ENDPOINT, formData);
-        
-        if (response.status === 200 || response.status === 201) {
-            console.log("Login bem-sucedido. Dados recebidos:", response.data);
-            // Salvaria o token aqui
-            router.push('/'); 
-        }
+if (response.status === 200 || response.status === 201) {
+  const { token } = response.data; // Supondo que o token seja retornado
+  localStorage.setItem('authToken', token); // Armazena o token no localStorage
+  router.push('/'); // Redireciona para a página principal
+}
     } catch (error) {
         if (error.response) {
             const { status, message, errors } = error.response.data;
@@ -159,30 +158,30 @@ export default function LoginPage() {
               />
 
               <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center rounded-lg bg-redbull-accent px-4 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                      Autenticando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-5 w-5 mr-3" />
-                      Entrar
-                    </>
-                  )}
-                </button>
+              <button
+  type="submit"
+  disabled={loading}
+  className="flex w-full items-center justify-center rounded-lg bg-redbull-accent px-4 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {loading ? (
+    <span className="flex items-center">
+      <Loader2 className="h-5 w-5 animate-spin mr-3" />
+      Autenticando...
+    </span>
+  ) : (
+    <span className="flex items-center">
+      <Send className="h-5 w-5 mr-3" />
+      Entrar
+    </span>
+  )}
+</button>
               </div>
             </form>
         </div>
         
         <p className="mt-6 text-center text-sm text-gray-500">
             Ainda não tem conta? 
-            <Link href="/register" passHref legacyBehavior>
+            <Link href="/cadastro" passHref legacyBehavior>
                 <a className="font-semibold text-redbull-accent hover:underline ml-1">
                     Registre-se aqui
                 </a>
