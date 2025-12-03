@@ -53,25 +53,45 @@ function MiniEventCard({ evento }) {
   const { fullSchedule } = formatEventDates(evento.dataInicio, evento.dataFinal);
   
   return (
-    <div className="group overflow-hidden rounded-lg border border-redbull-accent/30 bg-redbull-dark-blue p-5 shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-redbull-accent/50 cursor-pointer">
+    <div className="group overflow-hidden rounded-xl border border-gray-700/50 bg-gray-800 shadow-xl transition-all duration-300 hover:scale-[1.03] hover:shadow-red-500/30 cursor-pointer flex flex-col">
       
-      <div className="flex items-start">
-        <div className="mr-4 flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-redbull-accent/10">
-          <MapPin className="h-7 w-7 text-redbull-accent" />
-        </div>
-
-        <div>
-          <h3 className="mb-1 text-xl font-bold transition-colors duration-300 group-hover:text-redbull-accent">
-            {evento.nome}
-          </h3>
-          <div className="flex items-center text-sm font-medium text-gray-400">
-            <Calendar className="mr-1 h-4 w-4" />
-            <span>{fullSchedule}</span>
+      {/* Miniatura da Imagem (NOVO) */}
+      <div className="h-32 overflow-hidden bg-gray-700">
+        {evento.linkImagem ? (
+          <img 
+            src={evento.linkImagem} 
+            alt={`Miniatura de ${evento.nome}`} 
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            // Placeholder simples caso a URL da imagem falhe
+            onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400x150/1f2937/9ca3af?text=Sem+Imagem" }}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <ImageIcon className="h-8 w-8 text-gray-500" />
           </div>
-          <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-            {evento.descricao}
-          </p>
+        )}
+      </div>
+
+      {/* Conteúdo do Card */}
+      <div className="p-5 flex-grow">
+        <h3 className="mb-2 text-xl font-bold transition-colors duration-300 group-hover:text-red-500 line-clamp-2">
+          {evento.nome}
+        </h3>
+        
+        <div className="space-y-1">
+          <div className="flex items-center text-sm font-medium text-gray-400">
+            <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{fullSchedule}</span>
+          </div>
+          <div className="flex items-center text-sm font-medium text-gray-400">
+            <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{evento.local}</span>
+          </div>
         </div>
+        
+        <p className="mt-3 text-sm text-gray-300 line-clamp-3">
+          {evento.descricao}
+        </p>
       </div>
     </div>
   );
@@ -83,13 +103,14 @@ function FeaturedEventCard({ evento }) {
   const { fullSchedule } = formatEventDates(evento.dataInicio, evento.dataFinal);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl bg-redbull-dark-blue p-8 shadow-3xl transition-transform duration-300 hover:scale-[1.01] sm:flex sm:min-h-[400px]">
+    // Borda de destaque adicionada aqui (NOVO)
+    <div className="relative w-full overflow-hidden rounded-xl bg-gray-800 p-8 shadow-3xl transition-transform duration-300 hover:scale-[1.01] sm:flex sm:min-h-[400px] border-4 border-red-500/70">
       
-      {/* Efeito de Iluminação */}
-      <div className="absolute inset-0 bg-gradient-to-r from-redbull-accent/20 to-transparent opacity-50"></div>
+      {/* Efeito de Iluminação (ajustado para estética genérica) */}
+      <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-transparent opacity-50"></div>
       
       <div className="relative z-10 sm:w-2/3">
-        <h1 className="mb-2 text-4xl font-extrabold leading-tight text-redbull-accent md:text-5xl">
+        <h1 className="mb-2 text-4xl font-extrabold leading-tight text-red-500 md:text-5xl">
           {evento.nome}
         </h1>
         <p className="mb-6 text-xl font-light text-gray-300">
@@ -98,22 +119,23 @@ function FeaturedEventCard({ evento }) {
 
         <div className="space-y-3">
           <div className="flex items-center text-lg font-medium text-gray-200">
-            <Calendar className="mr-3 h-6 w-6 text-redbull-accent" />
+            <Calendar className="mr-3 h-6 w-6 text-red-500" />
             <span>{fullSchedule}</span>
           </div>
           <div className="flex items-center text-lg font-medium text-gray-200">
-            <MapPin className="mr-3 h-6 w-6 text-redbull-accent" />
+            <MapPin className="mr-3 h-6 w-6 text-red-500" />
             <span>{evento.local}</span>
           </div>
         </div>
         
         {evento.linkEvento && (
-          <Link href={evento.linkEvento} target="_blank" rel="noopener noreferrer">
-            <button className="mt-8 flex items-center rounded-full bg-redbull-accent px-8 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 hover:shadow-2xl">
+          // Usando <a> nativo em vez de Link do Next.js para compatibilidade com o Canvas
+          <a href={evento.linkEvento} target="_blank" rel="noopener noreferrer"> 
+            <button className="mt-8 flex items-center rounded-lg bg-red-500 px-8 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-red-600 hover:shadow-2xl">
               <LinkIcon className="h-5 w-5 mr-2" />
               Acessar Evento
             </button>
-          </Link>
+          </a>
         )}
       </div>
       
@@ -121,17 +143,14 @@ function FeaturedEventCard({ evento }) {
       <div className="relative hidden sm:block sm:w-1/3">
         <div className="ml-auto h-full w-full max-w-sm overflow-hidden rounded-lg shadow-2xl">
           {evento.linkImagem ? (
-             
-
-
- 
             <img 
               src={evento.linkImagem} 
               alt={`Imagem de ${evento.nome}`} 
               className="h-full w-full object-cover"
+              onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400x400/1f2937/9ca3af?text=Sem+Imagem" }}
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-gray-800">
+            <div className="flex h-full items-center justify-center bg-gray-700">
               <ImageIcon className="h-12 w-12 text-gray-500" />
             </div>
           )}
@@ -151,6 +170,7 @@ export default function EventListPage() {
   useEffect(() => {
     async function fetchEvents() {
       try {
+        // NOTE: URL ajustada para evitar o erro de porta duplicada (localmente 8080)
         const response = await axios.get('http://localhost:8080/api/v1/evento');
         setEvents(response.data); 
       } catch (err) {
@@ -165,11 +185,14 @@ export default function EventListPage() {
 
   // --- Renderização Condicional ---
   
+  // Estética de fundo
+  const backgroundClasses = "min-h-screen bg-gray-900 text-white p-8";
+
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-redbull-dark-blue p-8">
-        <Loader2 className="h-12 w-12 animate-spin text-redbull-accent" />
-        <p className="mt-4 text-xl font-medium text-redbull-accent">
+      <div className={`${backgroundClasses} flex flex-col items-center justify-center`}>
+        <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+        <p className="mt-4 text-xl font-medium text-red-500">
           Conectando ao servidor...
         </p>
       </div>
@@ -178,7 +201,7 @@ export default function EventListPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-redbull-dark-blue p-8 text-center">
+      <div className={`${backgroundClasses} flex flex-col items-center justify-center text-center`}>
         <AlertTriangle className="mb-4 h-12 w-12 text-red-500" />
         <p className="text-xl font-bold text-white">{error}</p>
       </div>
@@ -186,8 +209,8 @@ export default function EventListPage() {
   }
 
   if (events.length === 0) {
-     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-redbull-dark-blue p-8 text-center">
+      return (
+      <div className={`${backgroundClasses} flex flex-col items-center justify-center text-center`}>
         <AlertTriangle className="mb-4 h-12 w-12 text-gray-400" />
         <p className="text-xl font-bold text-white">Nenhum evento agendado no momento.</p>
       </div>
@@ -198,32 +221,34 @@ export default function EventListPage() {
   const miniEvents = events.slice(1);
 
   return (
-    <main className="container mx-auto px-4 py-12">
-      <h2 className="mb-10 text-center text-5xl font-extrabold uppercase tracking-widest text-white">
-        Calendário de Eventos 
-      </h2>
-      
-      {/* SEÇÃO DE DESTAQUE */}
-      <section className="mb-16">
-        <FeaturedEventCard evento={featuredEvent} />
-      </section>
+    <main className={`${backgroundClasses} pt-24`}>
+      <div className="container mx-auto px-4 py-12">
+        <h2 className="mb-10 text-center text-5xl font-extrabold uppercase tracking-widest text-white">
+          Calendário de Eventos 
+        </h2>
+        
+        {/* SEÇÃO DE DESTAQUE */}
+        <section className="mb-16">
+          <FeaturedEventCard evento={featuredEvent} />
+        </section>
 
-      {/* SEÇÃO DE MINIATURAS */}
-      {miniEvents.length > 0 && (
-        <>
-          <h3 className="mb-8 text-3xl font-bold text-redbull-accent border-b border-redbull-accent/50 pb-2">
-            Próximos Eventos
-          </h3>
-          <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {miniEvents.map(evento => (
-              <MiniEventCard key={evento.id} evento={evento} />
-            ))}
-          </section>
-        </>
-      )}
-      
-      <div className='mt-16 text-center text-gray-600'>
-        <p className='text-sm'>Dados consumidos via Axios do endpoint: `{API_ENDPOINT}`</p>
+        {/* SEÇÃO DE MINIATURAS */}
+        {miniEvents.length > 0 && (
+          <>
+            <h3 className="mb-8 text-3xl font-bold text-red-500 border-b border-red-500/50 pb-2">
+              Próximos Eventos
+            </h3>
+            <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {miniEvents.map(evento => (
+                <MiniEventCard key={evento.id} evento={evento} />
+              ))}
+            </section>
+          </>
+        )}
+        
+        <div className='mt-16 text-center text-gray-600'>
+          <p className='text-sm'>©EnventsManenger 2025-2025</p>
+        </div>
       </div>
     </main>
   );

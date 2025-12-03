@@ -21,7 +21,7 @@ const EVENTO_TIPOS = [
 ];
 
 // ----------------------------------------------------------------------
-// COMPONENTE DE INPUT REUTILIZÁVEL (MOVIDO PARA FORA)
+// COMPONENTE DE INPUT REUTILIZÁVEL 
 // ----------------------------------------------------------------------
 function InputField({ label, name, type = 'text', icon: Icon, required = false, rows = 1, formData, handleChange, validationErrors }) {
   const error = validationErrors[name];
@@ -40,17 +40,18 @@ function InputField({ label, name, type = 'text', icon: Icon, required = false, 
         {Icon && <Icon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />}
         
         {rows > 1 ? (
-            <textarea
-              id={name}
-              name={name}
-              value={formData[name]}
-              onChange={handleChange}
-              rows={rows}
-              maxLength={name === 'descricao' ? 500 : undefined}
-              className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
-                error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
-              }`}
-            />
+          <textarea
+            id={name}
+            name={name}
+            value={formData[name]}
+            onChange={handleChange}
+            rows={rows}
+            maxLength={name === 'descricao' ? 500 : undefined}
+            // Estilo Dark Mode unificado
+            className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 transition duration-150 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-red-500'
+            }`}
+          />
         ) : (
           <input
             id={name}
@@ -58,8 +59,9 @@ function InputField({ label, name, type = 'text', icon: Icon, required = false, 
             type={inputType}
             value={formData[name]}
             onChange={handleChange}
-            className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
+            // Estilo Dark Mode unificado
+            className={`w-full rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white placeholder-gray-500 shadow-inner focus:outline-none focus:ring-2 transition duration-150 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-red-500'
             }`}
           />
         )}
@@ -75,7 +77,7 @@ function InputField({ label, name, type = 'text', icon: Icon, required = false, 
 };
 
 // ----------------------------------------------------------------------
-// COMPONENTE SELECT REUTILIZÁVEL (MOVIDO PARA FORA)
+// COMPONENTE SELECT REUTILIZÁVEL 
 // ----------------------------------------------------------------------
 function SelectField({ label, name, required = false, formData, handleChange, validationErrors, options }) {
     const error = validationErrors[name];
@@ -92,16 +94,21 @@ function SelectField({ label, name, required = false, formData, handleChange, va
                     name={name}
                     value={formData[name]}
                     onChange={handleChange}
-                    className={`w-full appearance-none rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white shadow-inner focus:outline-none focus:ring-2 ${
-                        error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-redbull-accent'
+                    // Estilo Dark Mode unificado
+                    className={`w-full appearance-none rounded-lg border bg-gray-800 py-3 pl-12 pr-4 text-white shadow-inner focus:outline-none focus:ring-2 transition duration-150 ${
+                        error ? 'border-red-500 focus:ring-red-500' : 'border-gray-700 focus:ring-red-500'
                     }`}
                 >
                     {options.map(option => (
-                        <option key={option.value} value={option.value}>
+                        <option key={option.value} value={option.value} className="bg-gray-800">
                             {option.label}
                         </option>
                     ))}
                 </select>
+                {/* Ícone de seta customizado para o select */}
+                <svg className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
             </div>
             {error && (
                 <p className="flex items-center text-sm font-medium text-red-400">
@@ -135,7 +142,6 @@ export default function CreateEventPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // CORRIGIDO: Esta função de callback garante a atualização correta do estado
     setFormData(prev => ({ ...prev, [name]: value }));
     
     setValidationErrors(prev => {
@@ -158,6 +164,7 @@ export default function CreateEventPage() {
         
         if (response.status === 201 || response.status === 200) {
             setSuccessMessage(`Evento "${response.data.nome || formData.nome}" criado com sucesso! (ID: ${response.data.id})`);
+            // Limpar formulário após sucesso
             setFormData({
                 nome: '', descricao: '', tipo: EVENTO_TIPOS[0].value, 
                 local: '', dataInicio: '', dataFinal: '', 
@@ -169,13 +176,19 @@ export default function CreateEventPage() {
             const { status, message, errors } = error.response.data;
 
             if (status === 400 && errors) {
-                setValidationErrors(errors);
+                // Mapeia erros de validação do Spring (se forem no formato chave: valor)
+                const mappedErrors = Object.keys(errors).reduce((acc, key) => {
+                    // Assuming the API returns a list of errors for a field, taking the first one
+                    acc[key] = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                    return acc;
+                }, {});
+                setValidationErrors(mappedErrors);
                 setApiError("Falha na validação dos campos. Verifique os erros abaixo.");
             } else {
                 setApiError(`Erro ao criar evento: ${message || error.response.statusText}`);
             }
         } else {
-            setApiError("Erro de rede: Não foi possível conectar ao servidor Spring.");
+            setApiError("Erro de rede: Não foi possível conectar ao servidor Spring (Verifique http://localhost:8080).");
         }
     } finally {
         setLoading(false);
@@ -184,11 +197,13 @@ export default function CreateEventPage() {
 
 
   return (
-    <div className="min-h-screen bg-redbull-dark-blue text-white pt-20">
+    // Fundo escuro
+    <div className="min-h-screen bg-gray-900 text-white pt-20">
       <div className="container mx-auto px-4 py-8">
         
         <div className="mb-10 text-center">
-            <h1 className="text-4xl font-extrabold uppercase tracking-wider text-redbull-accent md:text-5xl">
+            {/* Título em destaque vermelho */}
+            <h1 className="text-4xl font-extrabold uppercase tracking-wider text-red-500 md:text-5xl">
                 Criar Novo Evento
             </h1>
             <p className="mt-2 text-gray-400">Preencha os dados para registrar um evento.</p>
@@ -196,18 +211,19 @@ export default function CreateEventPage() {
 
         {/* Mensagens de Feedback */}
         {apiError && (
-            <div className="mx-auto mb-6 max-w-2xl rounded-lg bg-red-800/20 p-4 text-red-400 shadow-lg border border-red-700">
+            <div className="mx-auto mb-6 max-w-4xl rounded-xl bg-red-800/30 p-4 text-red-400 shadow-xl border border-red-700/50">
                 <p className="font-bold">{apiError}</p>
             </div>
         )}
         {successMessage && (
-            <div className="mx-auto mb-6 max-w-2xl rounded-lg bg-green-800/20 p-4 text-green-400 shadow-lg border border-green-700">
+            <div className="mx-auto mb-6 max-w-4xl rounded-xl bg-green-800/30 p-4 text-green-400 shadow-xl border border-green-700/50">
                 <p className="font-bold">{successMessage}</p>
             </div>
         )}
 
         {/* FORMULÁRIO */}
-        <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6 rounded-xl bg-redbull-dark-blue p-8 shadow-3xl border border-redbull-accent/30">
+        {/* Card principal com sombra e borda sutis */}
+        <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6 rounded-xl bg-gray-800 p-8 shadow-3xl border border-gray-700/50">
           
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             
@@ -293,7 +309,7 @@ export default function CreateEventPage() {
           
           {/* Descrição (Required) */}
           <div className="col-span-full">
-             <InputField 
+               <InputField 
                 label="Descrição (Máx. 500 caracteres)" 
                 name="descricao" 
                 icon={FileText} 
@@ -310,7 +326,8 @@ export default function CreateEventPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center justify-center mx-auto rounded-full bg-redbull-accent px-10 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-redbull-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              // Botão principal em destaque vermelho
+              className="flex items-center justify-center mx-auto rounded-full bg-red-500 px-10 py-3 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
             >
               {loading ? (
                 <>
@@ -326,7 +343,6 @@ export default function CreateEventPage() {
             </button>
           </div>
         </form>
-
       </div>
     </div>
   );
