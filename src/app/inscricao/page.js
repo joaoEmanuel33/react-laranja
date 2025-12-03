@@ -257,7 +257,7 @@ export default function InscricaoPage() {
                                 ) : (
                                     <span className="flex items-center">
                                         <Send className="h-5 w-5 mr-3" />
-                                        Enviar Inscrição (POST)
+                                        Inscrever-se
                                     </span>
                                 )}
                             </button>
